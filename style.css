@@ -16,6 +16,7 @@
 html, body {
   height: 100%;
   overflow: hidden; /* no scrolling — navigation is via buttons */
+  overscroll-behavior: none; /* stop iOS rubber-band bounce */
 }
 
 body {
@@ -23,6 +24,8 @@ body {
   background: var(--cream);
   color: var(--text-dark);
   perspective: 1200px; /* global 3D perspective */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; /* avoid double-tap zoom delay */
 }
 
 h1, h2, .letter-text {
@@ -56,7 +59,9 @@ h1, h2, .letter-text {
 .slides-viewport {
   position: relative;
   width: 100%;
-  height: 100vh;
+  height: 100vh; /* fallback for older browsers */
+  height: calc(var(--vh, 1vh) * 100); /* accurate on mobile via JS */
+  height: 100dvh; /* best: accounts for mobile browser UI */
   z-index: 1;
 }
 
@@ -66,7 +71,7 @@ h1, h2, .letter-text {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 30px 20px 100px;
+  padding: 24px 18px calc(96px + env(safe-area-inset-bottom));
   opacity: 0;
   visibility: hidden;
   transform: translateX(60px) rotateY(8deg);
@@ -74,6 +79,7 @@ h1, h2, .letter-text {
   transition: opacity 0.5s ease, transform 0.5s ease, visibility 0.5s;
   background: linear-gradient(180deg, var(--pink-light) 0%, var(--cream) 100%);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .slide.active {
@@ -139,6 +145,7 @@ h1, h2, .letter-text {
   transform-style: preserve-3d;
   will-change: transform;
   transition: transform 0.08s ease, box-shadow 0.15s ease;
+  min-height: 44px;
 }
 
 .btn-primary {
@@ -298,48 +305,127 @@ h1, h2, .letter-text {
 #game-area {
   position: relative;
   width: 100%;
-  height: min(45vh, 380px);
+  height: min(38dvh, 380px);
   margin: 0 auto 18px;
-  background: var(--pink-light);
+  background: linear-gradient(180deg, #fff5f8 0%, var(--pink-light) 100%);
   border-radius: 16px;
   overflow: hidden;
   border: 3px solid var(--pink-mid);
   cursor: none;
+  box-shadow: inset 0 0 40px rgba(255, 143, 171, 0.25);
+  touch-action: none; /* keep finger drags inside the game from scrolling the page */
 }
 
 .falling-heart {
   position: absolute;
-  font-size: 1.8rem;
+  font-size: 1.7rem;
+  user-select: none;
+  pointer-events: none;
+  filter: drop-shadow(0 3px 6px rgba(214, 56, 104, 0.25));
+}
+
+.falling-heart.golden {
+  font-size: 1.9rem;
+  filter: drop-shadow(0 0 8px rgba(255, 200, 60, 0.8));
+}
+
+/* heart-shaped basket, drawn with CSS instead of emoji */
+.heart-basket {
+  position: absolute;
+  bottom: 12px;
+  width: 46px;
+  height: 42px;
+  transform: translateX(-50%);
   user-select: none;
   pointer-events: none;
 }
 
-#basket {
+.heart-basket::before,
+.heart-basket::after {
+  content: "";
   position: absolute;
-  bottom: 8px;
-  font-size: 2.5rem;
+  width: 26px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--pink-mid), var(--pink-deep));
+  border-radius: 26px 26px 0 0;
+  box-shadow: 0 6px 14px rgba(214, 56, 104, 0.45);
+}
+
+.heart-basket::before {
+  left: 23px;
+  transform: rotate(-45deg);
+  transform-origin: 0 100%;
+}
+
+.heart-basket::after {
+  left: 23px;
+  transform: rotate(45deg);
+  transform-origin: 100% 100%;
+}
+
+.heart-basket.catching::before,
+.heart-basket.catching::after {
+  background: linear-gradient(135deg, #ffd15c, var(--pink-deep));
+}
+
+/* sparkle burst when a heart is caught */
+.catch-spark {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, var(--pink-mid) 60%, transparent 100%);
+  pointer-events: none;
+  animation: sparkOut 0.5s ease-out forwards;
+}
+
+@keyframes sparkOut {
+  0% { transform: scale(0.3); opacity: 1; }
+  100% { transform: scale(2.2) translateY(-15px); opacity: 0; }
+}
+
+/* combo popup text */
+.combo-display {
+  position: absolute;
+  top: 14px;
+  left: 50%;
   transform: translateX(-50%);
-  user-select: none;
-  transition: left 0.05s linear;
+  font-family: 'Dancing Script', cursive;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--pink-deep);
+  text-shadow: 0 2px 4px rgba(255,255,255,0.9);
+  pointer-events: none;
+  animation: comboPop 0.5s ease;
+}
+
+@keyframes comboPop {
+  0% { transform: translateX(-50%) scale(0.6); opacity: 0; }
+  40% { transform: translateX(-50%) scale(1.15); opacity: 1; }
+  100% { transform: translateX(-50%) scale(1); opacity: 1; }
 }
 
 .game-message {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.97);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 14px;
   text-align: center;
   padding: 20px;
 }
 
 .game-message p {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   color: var(--pink-dark);
   font-weight: 600;
+  max-width: 300px;
+}
+
+.rating-hearts {
+  font-size: 2.2rem;
+  letter-spacing: 6px;
 }
 
 .hidden {
@@ -389,15 +475,15 @@ h1, h2, .letter-text {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 80px;
+  min-height: 80px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   background: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 20px;
+  gap: 16px;
   z-index: 10;
   box-shadow: 0 -8px 25px rgba(255, 92, 138, 0.15);
-  padding: 0 20px;
 }
 
 .nav-btn {
@@ -405,8 +491,9 @@ h1, h2, .letter-text {
   color: var(--pink-dark);
   border: 2px solid var(--pink-mid);
   box-shadow: 0 5px 0 var(--pink-mid);
-  padding: 10px 22px;
+  padding: 12px 20px;
   font-size: 0.9rem;
+  min-height: 44px; /* comfortable tap target */
 }
 
 .nav-btn.clicked {
@@ -432,6 +519,14 @@ h1, h2, .letter-text {
   border: 2px solid var(--pink-mid);
   cursor: pointer;
   transition: background 0.2s, transform 0.2s;
+  position: relative;
+}
+
+/* invisible padding so the tappable area is bigger than the visible dot */
+.dot::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
 }
 
 .dot.active {
@@ -439,10 +534,57 @@ h1, h2, .letter-text {
   transform: scale(1.3);
 }
 
-/* ---------- RESPONSIVE ---------- */
+/* ---------- RESPONSIVE (MOBILE) ---------- */
 @media (max-width: 600px) {
-  .slide { padding-bottom: 90px; }
-  .flip-card { width: 150px; height: 190px; }
+  .slide {
+    padding: 18px 14px calc(90px + env(safe-area-inset-bottom));
+    align-items: flex-start;
+  }
+  .slide-inner {
+    margin-top: 4vh;
+  }
+  .hero {
+    margin-top: 0;
+  }
+  .section-title {
+    margin-bottom: 6px;
+  }
+  .section-subtitle {
+    margin-bottom: 16px;
+    font-size: 0.85rem;
+  }
+
+  /* stack memory cards in one column, sized to fit small screens comfortably */
+  .flip-grid {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .flip-card {
+    width: min(78vw, 260px);
+    height: min(78vw, 260px);
+  }
+
+  .letter-card {
+    padding: 24px 18px;
+  }
+  .letter-text {
+    min-height: 100px;
+  }
+
+  .game-wrapper {
+    padding: 14px;
+  }
+
+  .final-card {
+    padding: 34px 22px;
+  }
+
   .nav-bar { gap: 10px; }
-  .nav-btn { padding: 8px 14px; font-size: 0.8rem; }
+  .nav-btn { padding: 10px 16px; font-size: 0.82rem; }
+}
+
+@media (max-width: 360px) {
+  .btn-primary, .btn-secondary { padding: 12px 24px; font-size: 0.9rem; }
+  .hero-subtitle { font-size: 1rem; }
 }
