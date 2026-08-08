@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Untuk Sayangku 💕</title>
 <link rel="stylesheet" href="style.css">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
@@ -93,8 +93,10 @@
             <div class="time-box">Waktu: <span id="time">30</span>s</div>
           </div>
           <div id="game-area">
-            <div id="basket">🧺</div>
+            <div id="combo-display" class="combo-display hidden"></div>
+            <div id="basket" class="heart-basket"></div>
             <div id="game-message" class="game-message hidden">
+              <div id="rating-hearts" class="rating-hearts"></div>
               <p id="game-result-text"></p>
               <button class="btn-secondary tilt3d" id="restartBtn">Main Lagi</button>
             </div>
