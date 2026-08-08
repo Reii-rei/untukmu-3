@@ -1,3 +1,13 @@
+/* ================= MOBILE VIEWPORT HEIGHT FIX ================= */
+// mobile browsers (esp. Safari) resize their address bar, which makes 100vh
+// unreliable — this keeps --vh accurate so the slide height never gets cut off
+function setViewportHeight() {
+  document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`);
+}
+setViewportHeight();
+window.addEventListener('resize', setViewportHeight);
+window.addEventListener('orientationchange', setViewportHeight);
+
 /* ================= FLOATING HEARTS BACKGROUND ================= */
 const heartsContainer = document.getElementById('floating-hearts');
 const heartSymbols = ['💗', '💖', '💕', '❤️', '💓'];
@@ -69,35 +79,49 @@ document.addEventListener('keydown', (e) => {
 prevBtn.disabled = true;
 
 /* ================= UNIVERSAL 3D TILT + CLICK EFFECT ================= */
+const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
 function apply3DEffect(el) {
   const strength = 14; // max rotation degrees
 
-  el.addEventListener('mousemove', (e) => {
-    const rect = el.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const rotateY = ((x - centerX) / centerX) * strength;
-    const rotateX = -((y - centerY) / centerY) * strength;
-    el.style.transform = `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.03)`;
-  });
+  // tilt-while-hovering only makes sense with a mouse/trackpad
+  if (!isTouchDevice) {
+    el.addEventListener('mousemove', (e) => {
+      const rect = el.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const rotateY = ((x - centerX) / centerX) * strength;
+      const rotateX = -((y - centerY) / centerY) * strength;
+      el.style.transform = `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.03)`;
+    });
 
-  el.addEventListener('mouseleave', () => {
-    el.style.transform = '';
-  });
+    el.addEventListener('mouseleave', () => {
+      el.style.transform = '';
+    });
+  }
 
+  let lastTouch = 0;
   const punch = () => {
     el.classList.add('clicked');
     el.style.transform = 'perspective(600px) rotateX(0deg) rotateY(0deg) scale(0.94)';
     setTimeout(() => {
       el.classList.remove('clicked');
-      el.style.transform = '';
+      el.style.transform = ''; // always reset so it never stays tilted
     }, 180);
   };
 
-  el.addEventListener('click', punch);
-  el.addEventListener('touchstart', punch, { passive: true });
+  el.addEventListener('touchstart', () => {
+    lastTouch = Date.now();
+    punch();
+  }, { passive: true });
+
+  el.addEventListener('click', () => {
+    // skip the synthetic click that follows a touchstart to avoid double-firing
+    if (Date.now() - lastTouch < 500) return;
+    punch();
+  });
 }
 
 document.querySelectorAll('.tilt3d').forEach(apply3DEffect);
@@ -148,62 +172,126 @@ const startGameBtn = document.getElementById('startGameBtn');
 const restartBtn = document.getElementById('restartBtn');
 const gameMessage = document.getElementById('game-message');
 const gameResultText = document.getElementById('game-result-text');
+const comboDisplay = document.getElementById('combo-display');
+const ratingHeartsEl = document.getElementById('rating-hearts');
 
 let score = 0;
 let timeLeft = 30;
 let gameRunning = false;
 let spawnInterval, timerInterval, fallLoop;
-let basketX = 200;
+let basketX = 200;      // actual rendered position (eased)
+let targetX = 200;      // pointer/target position
+let combo = 0;
+let elapsedGameTime = 0;
 
-function moveBasket(clientX) {
+function setTargetX(clientX) {
   const rect = gameArea.getBoundingClientRect();
   let x = clientX - rect.left;
-  x = Math.max(20, Math.min(rect.width - 20, x));
-  basketX = x;
-  basket.style.left = x + 'px';
+  x = Math.max(23, Math.min(rect.width - 23, x));
+  targetX = x;
 }
 
 gameArea.addEventListener('mousemove', (e) => {
-  if (gameRunning) moveBasket(e.clientX);
+  if (gameRunning) setTargetX(e.clientX);
 });
 
 gameArea.addEventListener('touchmove', (e) => {
   if (gameRunning) {
-    moveBasket(e.touches[0].clientX);
+    setTargetX(e.touches[0].clientX);
     e.preventDefault();
   }
 }, { passive: false });
 
+// smoothly ease the basket toward the target position for a nicer feel
+function easeBasket() {
+  basketX += (targetX - basketX) * 0.18;
+  basket.style.left = basketX + 'px';
+}
+
 function spawnHeart() {
   const heart = document.createElement('div');
+  const isGolden = Math.random() < 0.12; // rare bonus heart
   heart.classList.add('falling-heart');
-  heart.textContent = heartSymbols[Math.floor(Math.random() * heartSymbols.length)];
+  if (isGolden) heart.classList.add('golden');
+  heart.textContent = isGolden ? '💛' : heartSymbols[Math.floor(Math.random() * heartSymbols.length)];
+  heart.dataset.golden = isGolden ? '1' : '0';
+
   const areaWidth = gameArea.clientWidth;
-  const startX = Math.random() * (areaWidth - 30);
+  const startX = Math.random() * (areaWidth - 30) + 15;
   heart.style.left = startX + 'px';
   heart.style.top = '-30px';
-  heart.dataset.speed = (Math.random() * 1.5 + 1.5).toFixed(2);
+
+  // difficulty ramps up gently as the round progresses
+  const speedBoost = Math.min(elapsedGameTime / 30, 1) * 1.2;
+  heart.dataset.speed = (Math.random() * 1.3 + 1.4 + speedBoost).toFixed(2);
+  heart.dataset.sway = (Math.random() * 1.4 - 0.7).toFixed(2);
+  heart.dataset.age = '0';
   gameArea.appendChild(heart);
+}
+
+function spawnSpark(x, y) {
+  for (let i = 0; i < 5; i++) {
+    const spark = document.createElement('div');
+    spark.classList.add('catch-spark');
+    const size = Math.random() * 8 + 6;
+    spark.style.width = size + 'px';
+    spark.style.height = size + 'px';
+    spark.style.left = (x + (Math.random() * 30 - 15)) + 'px';
+    spark.style.top = (y + (Math.random() * 10 - 5)) + 'px';
+    gameArea.appendChild(spark);
+    setTimeout(() => spark.remove(), 500);
+  }
+}
+
+function showCombo(text) {
+  comboDisplay.textContent = text;
+  comboDisplay.classList.remove('hidden');
+  comboDisplay.style.animation = 'none';
+  void comboDisplay.offsetWidth; // restart animation
+  comboDisplay.style.animation = 'comboPop 0.5s ease';
+  clearTimeout(showCombo._t);
+  showCombo._t = setTimeout(() => comboDisplay.classList.add('hidden'), 600);
 }
 
 function fallStep() {
   const hearts = document.querySelectorAll('.falling-heart');
   const areaHeight = gameArea.clientHeight;
+  const areaWidth = gameArea.clientWidth;
+
   hearts.forEach(heart => {
+    const age = parseFloat(heart.dataset.age) + 1;
+    heart.dataset.age = age;
     const top = parseFloat(heart.style.top) + parseFloat(heart.dataset.speed);
+    let left = parseFloat(heart.style.left) + parseFloat(heart.dataset.sway) * Math.sin(age / 15);
+    left = Math.max(0, Math.min(areaWidth - 20, left));
     heart.style.top = top + 'px';
+    heart.style.left = left + 'px';
 
     // collision check with basket
-    if (top > areaHeight - 60) {
-      const heartX = parseFloat(heart.style.left) + 15;
-      if (Math.abs(heartX - basketX) < 35) {
-        score++;
+    if (top > areaHeight - 55) {
+      const heartX = left + 12;
+      if (Math.abs(heartX - basketX) < 32) {
+        const isGolden = heart.dataset.golden === '1';
+        combo++;
+        score += isGolden ? 3 : 1;
         scoreEl.textContent = score;
+
+        spawnSpark(heartX, areaHeight - 55);
+        basket.classList.add('catching');
+        setTimeout(() => basket.classList.remove('catching'), 180);
+
+        if (isGolden) {
+          showCombo('+3 Hati Emas! 💛');
+        } else if (combo >= 5 && combo % 5 === 0) {
+          showCombo(`Combo x${combo}! ✨`);
+        }
+
         heart.remove();
         return;
       }
     }
     if (top > areaHeight) {
+      combo = 0; // missed — combo resets
       heart.remove();
     }
   });
@@ -212,17 +300,30 @@ function fallStep() {
 function startGame() {
   score = 0;
   timeLeft = 30;
+  combo = 0;
+  elapsedGameTime = 0;
   scoreEl.textContent = score;
   timeEl.textContent = timeLeft;
   gameMessage.classList.add('hidden');
+  comboDisplay.classList.add('hidden');
   startGameBtn.classList.add('hidden');
-  document.querySelectorAll('.falling-heart').forEach(h => h.remove());
+  document.querySelectorAll('.falling-heart, .catch-spark').forEach(h => h.remove());
   basketX = gameArea.clientWidth / 2;
+  targetX = basketX;
   basket.style.left = basketX + 'px';
   gameRunning = true;
 
-  spawnInterval = setInterval(spawnHeart, 700);
-  fallLoop = setInterval(fallStep, 30);
+  let spawnRate = 800;
+  spawnInterval = setInterval(() => {
+    spawnHeart();
+    elapsedGameTime += spawnRate / 1000;
+  }, spawnRate);
+
+  fallLoop = setInterval(() => {
+    easeBasket();
+    fallStep();
+  }, 30);
+
   timerInterval = setInterval(() => {
     timeLeft--;
     timeEl.textContent = timeLeft;
@@ -235,16 +336,20 @@ function endGame() {
   clearInterval(spawnInterval);
   clearInterval(fallLoop);
   clearInterval(timerInterval);
-  document.querySelectorAll('.falling-heart').forEach(h => h.remove());
+  document.querySelectorAll('.falling-heart, .catch-spark').forEach(h => h.remove());
 
-  let msg;
-  if (score >= 20) {
-    msg = `Wow, ${score} hati! Kamu emang juara di hati aku 🏆💕`;
-  } else if (score >= 10) {
-    msg = `Keren, dapet ${score} hati! Sama kerennya kayak kamu 😍`;
+  let msg, stars;
+  if (score >= 25) {
+    stars = 3;
+    msg = `Wow, ${score} hati! Kamu emang juara di hati aku 🏆`;
+  } else if (score >= 12) {
+    stars = 2;
+    msg = `Keren, dapet ${score} hati! Sama manisnya kayak kamu 😍`;
   } else {
+    stars = 1;
     msg = `Kamu dapet ${score} hati... tapi tenang, hati aku tetep punya kamu semua kok 🥰`;
   }
+  ratingHeartsEl.textContent = '💖'.repeat(stars) + '🤍'.repeat(3 - stars);
   gameResultText.textContent = msg;
   gameMessage.classList.remove('hidden');
 }
