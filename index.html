@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Untuk Sayangku 💕</title>
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- background floating hearts -->
+  <div id="floating-hearts"></div>
+
+  <div class="slides-viewport">
+
+    <!-- SLIDE 1: HERO -->
+    <section class="slide active" data-slide="0">
+      <div class="slide-inner hero">
+        <p class="hero-eyebrow">Untuk seseorang yang spesial</p>
+        <h1 class="hero-title">Halo, Sayangku <span class="wave">👋</span></h1>
+        <p class="hero-subtitle">Ada sesuatu yang ingin aku tunjukkan ke kamu...</p>
+        <button class="btn-primary tilt3d" data-next>Buka Kejutannya ✨</button>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: LOVE LETTER -->
+    <section class="slide" data-slide="1">
+      <div class="slide-inner">
+        <h2 class="section-title">Surat Kecil Untukmu 💌</h2>
+        <div class="letter-card tilt3d">
+          <p id="typewriter-text" class="letter-text"></p>
+          <button class="btn-secondary tilt3d" id="revealBtn">Baca Suratnya</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3: MEMORIES (flip cards) -->
+    <section class="slide" data-slide="2">
+      <div class="slide-inner">
+        <h2 class="section-title">Momen-Momen Kita 📸</h2>
+        <p class="section-subtitle">Klik tiap kartu buat baca ceritanya!</p>
+        <div class="flip-grid">
+          <div class="flip-card tilt3d" data-flip>
+            <div class="flip-inner">
+              <div class="flip-front">
+                <img src="https://placehold.co/260x260/ffb6c1/ffffff?text=Foto+1" alt="Kenangan 1">
+                <span class="flip-hint">Klik aku 👆</span>
+              </div>
+              <div class="flip-back">
+                <h3>Pertama Kali Bertemu</h3>
+                <p>Ceritakan momen manis pertama kalian di sini...</p>
+              </div>
+            </div>
+          </div>
+          <div class="flip-card tilt3d" data-flip>
+            <div class="flip-inner">
+              <div class="flip-front">
+                <img src="https://placehold.co/260x260/ffc0cb/ffffff?text=Foto+2" alt="Kenangan 2">
+                <span class="flip-hint">Klik aku 👆</span>
+              </div>
+              <div class="flip-back">
+                <h3>Momen Favorit Kita</h3>
+                <p>Ceritakan momen favorit kalian di sini...</p>
+              </div>
+            </div>
+          </div>
+          <div class="flip-card tilt3d" data-flip>
+            <div class="flip-inner">
+              <div class="flip-front">
+                <img src="https://placehold.co/260x260/ffb6c1/ffffff?text=Foto+3" alt="Kenangan 3">
+                <span class="flip-hint">Klik aku 👆</span>
+              </div>
+              <div class="flip-back">
+                <h3>Rencana Ke Depan</h3>
+                <p>Ceritakan mimpi dan rencana kalian bersama di sini...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4: GAME -->
+    <section class="slide" data-slide="3">
+      <div class="slide-inner">
+        <h2 class="section-title">Waktunya Main! 🎮</h2>
+        <p class="section-subtitle">Tangkap hati yang jatuh pakai keranjang. Gerakkan mouse/jari ke kiri-kanan!</p>
+
+        <div class="game-wrapper tilt3d">
+          <div class="game-hud">
+            <div class="score-box">Skor: <span id="score">0</span></div>
+            <div class="time-box">Waktu: <span id="time">30</span>s</div>
+          </div>
+          <div id="game-area">
+            <div id="basket">🧺</div>
+            <div id="game-message" class="game-message hidden">
+              <p id="game-result-text"></p>
+              <button class="btn-secondary tilt3d" id="restartBtn">Main Lagi</button>
+            </div>
+          </div>
+          <button class="btn-primary tilt3d" id="startGameBtn">Mulai Main</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 5: FINAL -->
+    <section class="slide" data-slide="4">
+      <div class="slide-inner final-slide">
+        <div class="final-card tilt3d">
+          <h2 class="final-title">Aku Sayang Kamu 🥰</h2>
+          <p class="final-text">Terima kasih sudah jadi bagian dari hidupku. Semoga senyummu selalu ada setiap hari, ya.</p>
+          <div class="hearts-row">💗 💖 💓 💞 💕</div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- NAVIGATION -->
+  <div class="nav-bar">
+    <button class="nav-btn tilt3d" id="prevBtn">◀ Prev</button>
+    <div class="dots" id="dots"></div>
+    <button class="nav-btn tilt3d" id="nextBtn">Next ▶</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
