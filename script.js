@@ -34,7 +34,9 @@ const dots = Array.from(dotsContainer.children);
 function goToSlide(index) {
   if (index < 0 || index >= slides.length) return;
   slides[currentSlide].classList.remove('active');
-  slides[currentSlide].classList.add(index > currentSlide ? 'prev-out' : '');
+  if (index > currentSlide) {
+    slides[currentSlide].classList.add('prev-out');
+  }
   currentSlide = index;
   slides.forEach(s => s.classList.remove('prev-out'));
   slides[currentSlide].classList.add('active');
